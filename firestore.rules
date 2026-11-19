@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// Solo pueden leer/escribir las cuentas de Google cuyo correo (verificado)
+// exista como documento en la colección "allowed". Esa colección solo se
+// edita desde la consola de Firebase: ninguna cuenta puede modificarla desde la app.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function sesionValida() {
+      return request.auth != null
+        && request.auth.token.email_verified == true;
+    }
+
+    function esAutorizado() {
+      return sesionValida()
+        && exists(/databases/$(database)/documents/allowed/$(request.auth.token.email.lower()));
+    }
+
+    // Cada persona solo puede consultar su propio documento (para saber si tiene acceso).
+    match /allowed/{email} {
+      allow get: if sesionValida() && request.auth.token.email.lower() == email;
+      allow list, create, update, delete: if false;
+    }
+
+    match /players/{playerId} {
+      allow read, write: if esAutorizado();
+
+      // Fotos comprimidas (frente / reverso)
+      match /fotos/{lado} {
+        allow read, write: if esAutorizado();
+      }
+    }
+
+    // Todo lo demás, cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
