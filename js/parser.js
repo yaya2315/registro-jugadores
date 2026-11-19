@@ -32,19 +32,51 @@ export function formatearDUI(valor) {
 
 const aDigito = (c) => ({ O: '0', Q: '0', D: '0', I: '1', L: '1', '|': '1', S: '5', B: '8' }[c] ?? c);
 
-function buscarDUI(textoNorm) {
-  // El OCR suele confundir O/0, I/1... solo se corrige cuando hay guion.
-  const candidatos = [];
-  const estricto = /(?<!\d)(\d{8})\s*[-–—_.]?\s*(\d)(?!\d)/g;
-  const laxo = /(?<![A-Z0-9])([0-9OQDILSB|]{8})\s*[-–—_]\s*([0-9OQDILSB|])(?![A-Z0-9])/g;
-  for (const re of [estricto, laxo]) {
+const corregirDigitos = (s) => [...s].map(aDigito).join('');
+
+/** Candidatos de 9 dígitos con forma de DUI (8 + verificador), en orden de aparición. */
+function candidatosDUI(textoNorm) {
+  const patrones = [
+    // 12345678-9, 12345678 9, 123456789
+    { re: /(?<!\d)(\d{8})\s*[-–—_.]?\s*(\d)(?!\d)/g, arma: (m) => m[1] + m[2] },
+    // 1234 5678-9 (el OCR separa el número en dos)
+    { re: /(?<!\d)(\d{4})\s(\d{4})\s*[-–—_]\s*(\d)(?!\d)/g, arma: (m) => m[1] + m[2] + m[3] },
+    // O/0, I/1, S/5... solo se corrige cuando hay guion, para no inventar números
+    { re: /(?<![A-Z0-9])([0-9OQDILSB|]{8})\s*[-–—_]\s*([0-9OQDILSB|])(?![A-Z0-9])/g, arma: (m) => corregirDigitos(m[1] + m[2]) },
+  ];
+  const salida = [];
+  for (const { re, arma } of patrones) {
     for (const m of textoNorm.matchAll(re)) {
-      const num = [...(m[1] + m[2])].map(aDigito).join('');
-      if (/^\d{9}$/.test(num)) candidatos.push(num);
+      const n = arma(m);
+      if (/^\d{9}$/.test(n)) salida.push(n);
     }
   }
-  const valido = candidatos.find(validarDUI);
-  const elegido = valido || candidatos[0];
+  return salida;
+}
+
+/** Ventanas de 9 dígitos de líneas "solo números" (lectura de dígitos del OCR). */
+function ventanasNumeros(textoNumeros) {
+  const salida = [];
+  for (const linea of String(textoNumeros || '').split(/\r?\n/)) {
+    const d = linea.replace(/\D/g, '');
+    if (d.length < 9 || d.length > 10) continue; // más largo = teléfono, fecha pegada, etc.
+    for (let i = 0; i + 9 <= d.length; i++) salida.push(d.slice(i, i + 9));
+  }
+  return salida;
+}
+
+/**
+ * Busca el número de DUI. Entre varios candidatos prefiere el que cumple el
+ * dígito verificador, porque es la mejor señal de que se leyó bien.
+ * @param {string} textoNorm      texto completo del OCR (normalizado)
+ * @param {string} textoNumeros   segunda lectura solo de dígitos (opcional)
+ */
+function buscarDUI(textoNorm, textoNumeros = '') {
+  const estrictos = [...candidatosDUI(textoNorm), ...candidatosDUI(String(textoNumeros || ''))];
+  // Zona legible por máquina del reverso: "IDSLV" + número del documento.
+  const mrz = [...textoNorm.matchAll(/SLV\s*([0-9OIL]{9})/g)].map((m) => corregirDigitos(m[1]));
+  const ventanas = ventanasNumeros(textoNumeros);
+  const elegido = estrictos.find(validarDUI) || mrz.find(validarDUI) || ventanas.find(validarDUI) || estrictos[0];
   return elegido ? formatearDUI(elegido) : '';
 }
 
@@ -118,13 +150,13 @@ export function capitalizar(s) {
     .replace(/(^|\s)(\p{L})/gu, (_, a, b) => a + b.toLocaleUpperCase('es'));
 }
 
-function buscarNumeroCarnet(lineas, textoNorm) {
+function buscarNumeroCarnet(lineas, textoNorm, textoNumeros = '') {
   const porEtiqueta = /(?:CARNET|CARNE|N[O°º]\.?|NUM(?:ERO)?\.?|ID|FICHA|LICENCIA)\s*[:#.\-]?\s*([A-Z0-9][A-Z0-9\-\/]{2,})/;
   for (const l of lineas) {
     const m = l.match(porEtiqueta);
     if (m && /\d/.test(m[1])) return m[1];
   }
-  const dui = buscarDUI(textoNorm);
+  const dui = buscarDUI(textoNorm, textoNumeros);
   if (dui) return dui;
   const suelto = textoNorm.match(/(?<![A-Z0-9])(\d{4,})(?![A-Z0-9])/);
   return suelto ? suelto[1] : '';
@@ -133,8 +165,9 @@ function buscarNumeroCarnet(lineas, textoNorm) {
 /**
  * @param {'DUI'|'CARNET'} tipo
  * @param {string} textoOcr  texto reconocido (puede combinar frente y reverso)
+ * @param {string} [textoNumeros]  lectura adicional solo de dígitos (mejora el número)
  */
-export function parsearDocumento(tipo, textoOcr) {
+export function parsearDocumento(tipo, textoOcr, textoNumeros = '') {
   const textoNorm = normalizar(textoOcr);
   const lineas = textoNorm.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
@@ -146,7 +179,7 @@ export function parsearDocumento(tipo, textoOcr) {
     equipo: '',
   };
 
-  resultado.numero = tipo === 'DUI' ? buscarDUI(textoNorm) : buscarNumeroCarnet(lineas, textoNorm);
+  resultado.numero = tipo === 'DUI' ? buscarDUI(textoNorm, textoNumeros) : buscarNumeroCarnet(lineas, textoNorm, textoNumeros);
   resultado.apellidos = capitalizar(valorDeEtiqueta(lineas, /APELLIDOS?|SURNAMES?/));
   resultado.nombres = capitalizar(valorDeEtiqueta(lineas, /NOMBRES?|GIVEN/, { excluir: /APELLIDO|SURNAME/ }));
   if (tipo === 'CARNET') resultado.equipo = capitalizar(valorDeEtiqueta(lineas, /EQUIPO|CLUB/));

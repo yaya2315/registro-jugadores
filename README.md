@@ -1,20 +1,21 @@
 # Registro de jugadores
 
-Aplicación web para registrar jugadores tomando fotos de su **DUI** o **carnet de fútbol**. La app lee el texto de la foto (OCR), rellena el formulario, y al guardar los datos y las fotos quedan en **Firebase (Firestore)**. Solo pueden entrar las cuentas que el administrador autorice.
+Aplicación web (instalable en el celular) para registrar jugadores tomando fotos de su **DUI** o **carnet de fútbol**. La app lee el texto de la foto (OCR), extrae la foto del rostro del documento, rellena la ficha, y al guardar todo queda en **Firebase (Firestore)**. Solo pueden entrar las cuentas que el administrador autorice.
 
 - Inicio de sesión: Google (Firebase Authentication)
 - Base de datos: Cloud Firestore
-- Lectura de fotos: Tesseract.js, se ejecuta en el propio navegador (la foto no se envía a ningún servicio de OCR)
+- Lectura de fotos: Tesseract.js, y detección de rostro con MediaPipe. Ambos se ejecutan en el propio navegador: las fotos no se envían a ningún servicio de OCR
 - Hosting: GitHub Pages (sitio estático, sin compilación)
 
 ## Cómo funciona
 
 1. La persona autorizada inicia sesión con Google.
-2. Pulsa **Nuevo registro**, elige DUI o Carnet y toma foto del frente y reverso (o la sube de la galería).
-3. La app rellena número, nombres, apellidos y fecha de nacimiento. **Siempre hay que revisar los datos**: el OCR puede equivocarse. En el DUI se valida además el dígito verificador.
-4. Al guardar, el registro aparece en la lista, con búsqueda, filtro por tipo y exportación a CSV (Excel).
+2. Pulsa **Nuevo jugador** y toma foto del frente y reverso del **DUI** y/o del **carnet** (o las sube de la galería). Un mismo jugador puede tener los dos documentos.
+3. La app rellena número de documento, nombres, apellidos y fecha de nacimiento, y **recorta la foto del jugador** de la foto del documento. **Siempre hay que revisar los datos**: el OCR puede equivocarse. En el DUI se valida además el dígito verificador. Si la foto del rostro no sale bien, se puede tomar o subir otra.
+4. Al guardar, el jugador aparece en el **Plantel**: una fila por jugador con su foto a la izquierda y su nombre, equipo, edad y posición a la derecha, más marcas de qué documentos ya tiene registrados.
+5. Desde el plantel: búsqueda (sin importar tildes), filtros (con DUI, con carnet, falta documento, por equipo), orden, ficha completa con fotos ampliables, edición, borrado y exportación a CSV (Excel).
 
-Las fotos se reducen y comprimen (JPEG) y se guardan en Firestore, así no hace falta Firebase Storage (que exige plan de pago).
+Las fotos de los documentos se reducen y comprimen (JPEG) y se guardan en Firestore, así no hace falta Firebase Storage (que exige plan de pago).
 
 ## Puesta en marcha (una sola vez)
 
@@ -59,11 +60,19 @@ node test/parser.test.mjs
 ## Estructura de datos
 
 ```
-allowed/{correo}                      -> lista de correos autorizados (solo desde la consola)
-players/{id}                          -> tipo, numero, nombres, apellidos, fechaNacimiento,
-                                         equipo, telefono, notas, miniatura, creadoEn, creadoPor
-players/{id}/fotos/{frente|reverso}   -> { data: "data:image/jpeg;base64,..." }
+allowed/{correo}                 -> lista de correos autorizados (solo desde la consola)
+players/{id}                     -> nombres, apellidos, fechaNacimiento, equipo, posicion, camiseta,
+                                    telefono, notas, dui, carnet, foto (retrato 3:4),
+                                    creadoEn, creadoPor
+players/{id}/fotos/{clave}       -> { data: "data:image/jpeg;base64,..." }
+                                    clave: dui_frente | dui_reverso | carnet_frente | carnet_reverso
 ```
+
+Los registros guardados con la primera versión (un documento por registro, campos `tipo` y `numero`) se siguen leyendo y se convierten al formato nuevo la primera vez que se editan.
+
+## Modo demostración (solo en tu computadora)
+
+Con `npx serve .` abre `http://localhost:3000/?demo`. Usa datos de ejemplo en memoria, sin iniciar sesión y sin tocar Firebase, útil para probar la interfaz. Solo funciona en `localhost`; en la página publicada se ignora.
 
 ## Privacidad
 

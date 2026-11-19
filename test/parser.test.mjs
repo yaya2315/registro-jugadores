@@ -43,6 +43,33 @@ assert.equal(r.nombres, 'Luis Alberto');
 assert.equal(r.apellidos, 'Ramos');
 assert.equal(r.equipo, 'Aguilas Fc');
 
+// --- Número del DUI: casos que antes se escapaban ---
+assert.equal(validarDUI('05482135-1'), true);
+
+// Número partido en dos por el OCR
+r = parsearDocumento('DUI', 'DOCUMENTO UNICO DE IDENTIDAD\n0548 2135-1\nSEXO M');
+assert.equal(r.numero, '05482135-1');
+
+// Entre dos candidatos gana el que cumple el dígito verificador
+r = parsearDocumento('DUI', 'EMISION 20231105 7\nNUMERO 05482135-1');
+assert.equal(r.numero, '05482135-1');
+
+// El texto completo no trae el número, pero la lectura de dígitos sí (con espacios sueltos)
+r = parsearDocumento('DUI', 'REPUBLICA DE EL SALVADOR\nAPELLIDOS\nGARCIA', '05 48 21 35 1\n1998\n');
+assert.equal(r.numero, '05482135-1');
+
+// Lectura de dígitos con guion
+r = parsearDocumento('DUI', 'texto sin numero', '\n05482135-1\n');
+assert.equal(r.numero, '05482135-1');
+
+// Zona legible por máquina del reverso
+r = parsearDocumento('DUI', 'IDSLV054821351<<<<<<<<<<<<<<<\n9806143M3001012SLV<<<<<<<<<<<0');
+assert.equal(r.numero, '05482135-1');
+
+// Líneas de dígitos largas (teléfonos, etc.) no se confunden con el DUI
+r = parsearDocumento('DUI', 'sin numero', '2234567890123\n');
+assert.equal(r.numero, '');
+
 // Texto basura no debe romper nada
 r = parsearDocumento('DUI', '###  ~~ \n\n  ');
 assert.deepEqual(r, { numero: '', nombres: '', apellidos: '', fechaNacimiento: '', equipo: '' });
