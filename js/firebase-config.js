@@ -5,12 +5,12 @@
 // La seguridad real está en firestore.rules + la lista de usuarios permitidos.
 
 export const firebaseConfig = {
-  apiKey: 'PEGAR_AQUI',
-  authDomain: 'PEGAR_AQUI',
-  projectId: 'PEGAR_AQUI',
-  storageBucket: 'PEGAR_AQUI',
-  messagingSenderId: 'PEGAR_AQUI',
-  appId: 'PEGAR_AQUI',
+  apiKey: 'AIzaSyC-o64XaYlZ4P2ChafLTJspHYdlbEJhRQI',
+  authDomain: 'registro-jugadores-75efb.firebaseapp.com',
+  projectId: 'registro-jugadores-75efb',
+  storageBucket: 'registro-jugadores-75efb.firebasestorage.app',
+  messagingSenderId: '578503501807',
+  appId: '1:578503501807:web:a2bd3475602781c036b81a',
 };
 
 export const CONFIGURADO = !Object.values(firebaseConfig).some((v) => String(v).startsWith('PEGAR'));
