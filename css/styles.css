@@ -102,7 +102,7 @@ code { background: var(--verde-claro); padding: 1px 6px; border-radius: 6px; fon
 .btn.texto:hover { background: var(--verde-claro); }
 .btn.peligro { color: var(--error); }
 .btn.grande { width: 100%; min-height: 50px; font-size: 1.05rem; }
-.btn.peq { min-height: 38px; padding: 6px 12px; font-size: .9rem; }
+.btn.peq { min-height: 40px; padding: 8px 14px; font-size: .9rem; }
 .btn[disabled] { opacity: .55; cursor: progress; }
 
 /* ---------- Barra superior ---------- */
@@ -164,7 +164,7 @@ code { background: var(--verde-claro); padding: 1px 6px; border-radius: 6px; fon
 .item-meta { color: var(--suave); font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .insignia {
   flex: none; font-size: .72rem; font-weight: 700; letter-spacing: .04em;
-  padding: 4px 9px; border-radius: 999px; background: var(--verde-claro); color: var(--verde);
+  padding: 6px 12px; border-radius: 999px; background: var(--verde-claro); color: var(--verde);
 }
 .vacio { text-align: center; color: var(--suave); padding: 48px 16px; }
 
