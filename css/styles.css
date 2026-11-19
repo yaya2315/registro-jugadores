@@ -143,11 +143,11 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 .stats { margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .stats > div {
   display: flex; flex-direction: column-reverse; justify-content: flex-end; align-items: center; gap: 4px;
-  background: rgba(0, 0, 0, .22); border-radius: 14px; padding: 12px 6px;
+  background: rgba(0, 0, 0, .22); border-radius: 14px; padding: 12px 8px;
   text-align: center;
 }
 .stats dd { margin: 0; font-size: 1.7rem; font-weight: 800; line-height: 1; color: var(--lima); font-variant-numeric: tabular-nums; }
-.stats dt { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
+.stats dt { font-size: .66rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; opacity: .9; }
 
 /* ---------- Lista ---------- */
 .contenedor { width: min(900px, 100%); margin: -40px auto 0; padding: 0 16px 120px; position: relative; }
@@ -227,7 +227,7 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 .fila-docs { display: grid; gap: 6px; justify-items: end; }
 .doc-chip {
   font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
-  padding: 5px 9px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
+  padding: 6px 10px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
 }
 .doc-chip.ok { background: var(--verde-claro); color: var(--verde); }
 .doc-chip.falta { border: 1px dashed var(--borde); color: var(--suave); }
