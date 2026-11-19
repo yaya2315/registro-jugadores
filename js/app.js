@@ -679,6 +679,30 @@ async function iniciar() {
     pintarRetrato();
   });
 
+  /** Vuelve a sacar la cara (sin fondo) de las fotos de documento que ya están en el formulario. */
+  $('#ret-doc').addEventListener('click', async () => {
+    const clave = ['dui_frente', 'carnet_frente', 'dui_reverso', 'carnet_reverso'].find((c) => fotosDoc[c]);
+    if (!clave) return toast('Primero agrega la foto del DUI o del carnet.', true);
+    try {
+      estadoOcr(true, 'Buscando la foto del jugador…');
+      const img = new Image();
+      img.src = fotosDoc[clave].dataUrl;
+      await img.decode();
+      const canvas = el('canvas', { width: img.naturalWidth, height: img.naturalHeight });
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      const url = await extraerRostro(canvas);
+      if (!url) return toast('No se encontró un rostro en esa foto. Toma o sube la foto del jugador.', true);
+      retrato = { dataUrl: url, cambiada: true, manual: false, origen: clave };
+      pintarRetrato();
+      toast('Foto del jugador actualizada.');
+    } catch (e) {
+      console.error(e);
+      toast('No se pudo sacar la foto del documento.', true);
+    } finally {
+      estadoOcr(false);
+    }
+  });
+
   /* --- Abrir / guardar --- */
 
   async function abrirFormulario(registro = null) {

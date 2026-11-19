@@ -1,7 +1,7 @@
 // Service worker: permite instalar la app y abrir la "carcasa" aunque no haya señal.
 // Los datos (Firestore) y el login (Google) siempre van directo a la red: no se guardan aquí.
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `jugadores-${VERSION}`;
 const CARCASA = [
   './',

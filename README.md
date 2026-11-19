@@ -11,7 +11,7 @@ Aplicación web (instalable en el celular) para registrar jugadores tomando foto
 
 1. La persona autorizada inicia sesión con Google.
 2. Pulsa **Nuevo jugador** y toma foto del frente y reverso del **DUI** y/o del **carnet** (o las sube de la galería). Un mismo jugador puede tener los dos documentos.
-3. La app rellena número de documento, nombres, apellidos y fecha de nacimiento, y **recorta la foto del jugador** de la foto del documento. **Siempre hay que revisar los datos**: el OCR puede equivocarse. En el DUI se valida además el dígito verificador. Si la foto del rostro no sale bien, se puede tomar o subir otra.
+3. La app rellena número de documento, nombres, apellidos y fecha de nacimiento, y **recorta la cara del jugador** de la foto del documento: solo la cabeza, sin fondo y con un retoque mínimo, que se ve sobre un degradado verde en el plantel. Si ya hay fotos de documento en el formulario, el botón «Sacar del documento» repite el recorte. **Siempre hay que revisar los datos**: el OCR puede equivocarse. En el DUI se valida además el dígito verificador. Si la foto del rostro no sale bien, se puede tomar o subir otra.
 4. Al guardar, el jugador aparece en el **Plantel**: una fila por jugador con su foto a la izquierda y su nombre, equipo, edad y posición a la derecha, más marcas de qué documentos ya tiene registrados.
 5. Desde el plantel: búsqueda (sin importar tildes), filtros (con DUI, con carnet, falta documento, por equipo), orden, ficha completa con fotos ampliables, edición, borrado y exportación a CSV (Excel).
 
