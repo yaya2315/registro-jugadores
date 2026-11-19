@@ -147,7 +147,7 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
   text-align: center;
 }
 .stats dd { margin: 0; font-size: 1.7rem; font-weight: 800; line-height: 1; color: var(--lima); font-variant-numeric: tabular-nums; }
-.stats dt { font-size: .66rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; opacity: .9; }
+.stats dt { font-size: .78rem; font-weight: 650; letter-spacing: .01em; opacity: .92; }
 
 /* ---------- Lista ---------- */
 .contenedor { width: min(900px, 100%); margin: -40px auto 0; padding: 0 16px 120px; position: relative; }
@@ -226,7 +226,7 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 
 .fila-docs { display: grid; gap: 6px; justify-items: end; }
 .doc-chip {
-  font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
   padding: 6px 10px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
 }
 .doc-chip.ok { background: var(--verde-claro); color: var(--verde); }
