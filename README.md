@@ -75,6 +75,24 @@ players/{id}                     -> nombres, apellidos, fechaNacimiento, equipo,
                                     creadoEn, creadoPor
 players/{id}/fotos/{clave}       -> { data: "data:image/jpeg;base64,..." }
                                     clave: dui_frente | dui_reverso | carnet_frente | carnet_reverso
+documentos/{tipo}_{numero}       -> { jugadorId, tipo, creadoEn }: "llave" única de cada DUI (9 dígitos)
+                                    y carnet registrado; la usa la app para no repetir jugadores
+```
+
+## Un jugador nunca se repite
+
+- **En pantalla:** apenas se lee o se escribe un DUI o carnet que ya existe, el formulario avisa de quién es (con su foto y equipo) y el botón pasa a **Actualizar ficha**. Al guardar se actualiza esa ficha con lo nuevo, por si lo anterior estaba mal; lo que se deje en blanco se conserva, y no se crea otro jugador.
+- **Si no se puede fusionar** (el DUI es de un jugador y el carnet de otro, o al editar a alguien se le pone el número de otro), se muestra el aviso en rojo y no deja guardar hasta corregir el número.
+- **En la base de datos:** cada DUI y carnet tiene una «llave» en `documentos/`. Se escribe en la misma transacción que el jugador y las reglas no permiten actualizarla, así que Firestore rechaza un segundo jugador con el mismo número aunque dos personas escaneen al mismo tiempo o un teléfono tenga la lista desactualizada. Al borrar un jugador o cambiarle el número, la llave se libera.
+- Se compara el DUI por sus 9 dígitos (`05482135-1`, `0548 2135 1` y `054821351` son el mismo) y el carnet sin importar mayúsculas, espacios ni guiones. Un DUI incompleto no se compara.
+- Los jugadores guardados antes de esta versión no tienen llave hasta que se editan por primera vez; mientras tanto la pantalla igual los detecta.
+- **Importante:** hay que publicar `firestore.rules` otra vez (incluye `documentos/`). Mientras no se publiquen, la app guarda igual pero sin las llaves, y avisa a los administradores.
+
+### Pruebas automáticas
+```
+node test/parser.test.mjs    # lectura de datos, dígito verificador, claves de documento
+node test/zip.test.mjs       # respaldo ZIP (se extrae con tar para validar)
+node test/backend.test.mjs   # guardado sin repetidos, contra un Firestore simulado
 ```
 
 Los registros guardados con la primera versión (un documento por registro, campos `tipo` y `numero`) se siguen leyendo y se convierten al formato nuevo la primera vez que se editan.

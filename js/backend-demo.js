@@ -1,6 +1,8 @@
 // Modo demostración: mismos métodos que backend-firebase.js pero en memoria.
 // Solo se activa en localhost con ?demo (ver app.js). Sirve para probar la interfaz sin tocar la base real.
 
+import { claveDocumento } from './parser.js';
+
 const retratoSvg = (fondo, piel, camisa) =>
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
@@ -65,6 +67,12 @@ export async function crear() {
     },
     async guardar({ id, datos, fotos, usuario }) {
       const nuevoId = id || `demo${Date.now()}`;
+      // Misma regla que Firestore: un DUI o carnet no puede estar en dos jugadores distintos.
+      for (const tipo of ['dui', 'carnet']) {
+        const clave = claveDocumento(tipo, datos[tipo]);
+        const otro = clave && jugadores.find((p) => p.id !== nuevoId && claveDocumento(tipo, p[tipo]) === clave);
+        if (otro) throw Object.assign(new Error('DUI o carnet repetido'), { code: 'repetido', tipo, jugadorId: otro.id });
+      }
       const previo = jugadores.find((p) => p.id === nuevoId);
       const reg = { ...previo, ...datos, id: nuevoId, creadoEn: previo?.creadoEn ?? new Date(), creadoPor: previo?.creadoPor ?? usuario };
       jugadores = previo ? jugadores.map((p) => (p.id === nuevoId ? reg : p)) : [reg, ...jugadores];
@@ -73,7 +81,7 @@ export async function crear() {
         else fotosDoc.delete(`${nuevoId}/${clave}`);
       }
       emitir();
-      return nuevoId;
+      return { id: nuevoId, sinLlaves: false };
     },
     async eliminar(id) {
       jugadores = jugadores.filter((p) => p.id !== id);

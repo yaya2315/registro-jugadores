@@ -52,6 +52,15 @@ service cloud.firestore {
       allow delete: if esAdmin() && correoActual() != correo;
     }
 
+    // "Llaves" que impiden registrar dos veces el mismo DUI o carnet: documentos/dui_054821351 -> { jugadorId }.
+    // Se pueden crear y borrar, pero NO actualizar: si la llave ya existe, crear otra igual falla, y
+    // como la app la escribe en la misma transacción que el jugador, no queda ningún duplicado.
+    match /documentos/{llave} {
+      allow read: if esAutorizado();
+      allow create: if esAutorizado() && request.resource.data.jugadorId is string;
+      allow delete: if esAutorizado();
+    }
+
     match /players/{playerId} {
       allow read, write: if esAutorizado();
 

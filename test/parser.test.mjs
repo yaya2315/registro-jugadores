@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
-import { parsearDocumento, validarDUI, formatearDUI } from '../js/parser.js';
+import { parsearDocumento, validarDUI, formatearDUI, claveDocumento } from '../js/parser.js';
+
+// Clave de documento: la misma persona escrita de formas distintas da la misma clave
+assert.equal(claveDocumento('dui', '05482135-1'), '054821351');
+assert.equal(claveDocumento('dui', '0548 2135 1'), '054821351');
+assert.equal(claveDocumento('dui', ' 054821351 '), '054821351');
+assert.equal(claveDocumento('dui', '12345'), ''); // incompleto: no se compara
+assert.equal(claveDocumento('dui', ''), '');
+assert.equal(claveDocumento('carnet', ' fb-00123 '), 'FB00123');
+assert.equal(claveDocumento('carnet', 'FB/00-123'), 'FB00123');
+assert.equal(claveDocumento('carnet', 'ab'), '');
+assert.equal(claveDocumento('carnet', undefined), '');
 
 // Dígito verificador
 assert.equal(validarDUI('12345678-4'), true);

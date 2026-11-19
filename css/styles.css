@@ -128,7 +128,7 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 .barra-marca { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; letter-spacing: .02em; }
 .barra-marca svg { width: 30px; height: 30px; color: var(--lima); }
 .barra-usuario { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.barra .email { font-size: .82rem; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 30vw; }
+.barra .email { font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 30vw; }
 .barra .btn.texto { color: #fff; }
 .barra .btn.texto:hover { background: rgba(255, 255, 255, .15); }
 
@@ -137,17 +137,19 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
   background: repeating-linear-gradient(90deg, var(--cesped-1) 0 56px, var(--cesped-2) 56px 112px);
   color: var(--sobre-verde);
 }
-.hero-in { width: min(900px, 100%); margin: 0 auto; padding: 20px 16px 64px; }
-.hero h1 { font-size: 2rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-.hero-sub { margin: 4px 0 18px; opacity: .88; }
+.hero-in { width: min(900px, 100%); margin: 0 auto; padding: 12px 16px 52px; }
+.hero h1 { font-size: 1.45rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.hero-sub { margin: 2px 0 10px; font-size: .92rem; }
+/* En el teléfono el subtítulo sobra: cada línea cuenta */
+@media (max-width: 520px) { .hero-sub { display: none; } .hero h1 { margin-bottom: 10px; } }
 .stats { margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .stats > div {
   display: flex; flex-direction: column-reverse; justify-content: flex-end; align-items: center; gap: 4px;
-  background: rgba(0, 0, 0, .22); border-radius: 14px; padding: 12px 8px;
+  background: rgba(0, 0, 0, .22); border-radius: 14px; padding: 9px 8px;
   text-align: center;
 }
-.stats dd { margin: 0; font-size: 1.7rem; font-weight: 800; line-height: 1; color: var(--lima); font-variant-numeric: tabular-nums; }
-.stats dt { font-size: .78rem; font-weight: 650; letter-spacing: .01em; opacity: .92; }
+.stats dd { margin: 0; font-size: 1.4rem; font-weight: 800; line-height: 1; color: var(--lima); font-variant-numeric: tabular-nums; }
+.stats dt { font-size: .78rem; font-weight: 650; letter-spacing: .01em; }
 
 /* ---------- Lista ---------- */
 .contenedor { width: min(900px, 100%); margin: -40px auto 0; padding: 0 16px 120px; position: relative; }
@@ -508,3 +510,24 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 @media (prefers-color-scheme: dark) { .contador { color: #06170f; } }
 .panel-filtros { display: grid; gap: 12px; }
 .herramientas { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------- Aviso de jugador ya registrado ---------- */
+.repetido {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start;
+  padding: 12px 14px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--aviso) 55%, transparent);
+  background: color-mix(in srgb, var(--aviso) 14%, var(--superficie));
+}
+.repetido.error {
+  border-color: color-mix(in srgb, var(--error) 55%, transparent);
+  background: var(--error-fondo);
+}
+.repetido .fila-foto { width: 56px; }
+.repetido-texto { display: grid; gap: 4px; min-width: 0; }
+.repetido-texto strong { font-size: 1rem; }
+.repetido-texto p { margin: 0; font-size: .9rem; overflow-wrap: anywhere; }
+.repetido-texto .repetido-quien { font-weight: 700; }
+.repetido-icono {
+  width: 56px; height: 56px; border-radius: 12px; display: grid; place-items: center;
+  font-size: 1.6rem; font-weight: 800; background: color-mix(in srgb, var(--error) 18%, transparent); color: var(--error);
+}

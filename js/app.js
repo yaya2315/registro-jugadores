@@ -3,7 +3,7 @@ import { CONFIGURADO } from './firebase-config.js';
 import { procesarFoto, cargarCanvas, recorteCentrado } from './images.js';
 import { reconocerDocumento } from './ocr.js';
 import { extraerRostro } from './rostro.js';
-import { parsearDocumento, validarDUI, formatearDUI, normalizar } from './parser.js';
+import { parsearDocumento, validarDUI, formatearDUI, normalizar, claveDocumento } from './parser.js';
 import { $, $$, el, DOCS, LADOS, CLAVES, fechaLegible, edad, nombreCompleto, claveEquipo, fechaHora, leerFotosDe } from './util.js';
 import { construirCsv, descargar } from './respaldo.js';
 import { construirPlanilla, construirFicha, imprimir } from './impresion.js';
@@ -129,6 +129,7 @@ async function iniciar() {
       (lista) => {
         players = lista.map(adaptar);
         pintarLista();
+        if (dlgForm.open) evaluarRepetido(); // otro teléfono pudo registrar ese DUI/carnet mientras se llenaba el formulario
       },
       (e) => {
         console.error(e);
@@ -423,7 +424,12 @@ async function iniciar() {
   // Qué documento llenó cada campo compartido (para poder mejorarlo con otra foto del mismo documento).
   const origen = {};
   for (const [nombre, campo] of Object.entries(campos)) {
-    campo.addEventListener('input', () => { tocados.add(nombre); delete origen[nombre]; actualizarMarcas(); });
+    campo.addEventListener('input', () => {
+      tocados.add(nombre);
+      delete origen[nombre];
+      actualizarMarcas();
+      if (nombre === 'dui' || nombre === 'carnet') evaluarRepetido();
+    });
   }
 
   let editando = null;
@@ -432,6 +438,8 @@ async function iniciar() {
   let retrato = null; // {dataUrl, cambiada, manual, origen?}
   let colaOcr = Promise.resolve();
   let guardando = false;
+  let existente = null; // jugador ya registrado con el mismo DUI/carnet: al guardar se actualiza, no se crea otro
+  let conflicto = ''; // motivo por el que no se puede guardar (número de otro jugador, o DUI y carnet de dos distintos)
 
   const docActual = () => form.elements.doc.value;
 
@@ -463,6 +471,71 @@ async function iniciar() {
     if (f !== campos.dui.value) campos.dui.value = f;
     validarDuiUI();
   });
+
+  /* --- Jugador ya registrado: se avisa y se actualiza, nunca se duplica --- */
+
+  function aplicarTextosForm() {
+    $('#form-titulo').textContent = editando ? 'Editar jugador' : existente ? 'Actualizar jugador' : 'Nuevo jugador';
+    $('#btn-guardar').textContent = editando ? 'Guardar cambios' : existente ? 'Actualizar ficha' : 'Guardar';
+  }
+
+  /** Jugadores (distintos del que se edita) que ya tienen el DUI o el carnet que hay en el formulario. */
+  function buscarRepetidos() {
+    const kd = claveDocumento('dui', campos.dui.value);
+    const kc = claveDocumento('carnet', campos.carnet.value);
+    const otros = players.filter((p) => p.id !== editando?.id);
+    return {
+      porDui: kd ? otros.find((p) => claveDocumento('dui', p.dui) === kd) : null,
+      porCarnet: kc ? otros.find((p) => claveDocumento('carnet', p.carnet) === kc) : null,
+    };
+  }
+
+  let avisoVisto = '';
+  function evaluarRepetido() {
+    const aviso = $('#aviso-repetido');
+    const { porDui, porCarnet } = buscarRepetidos();
+    existente = null;
+    conflicto = '';
+
+    if (porDui && porCarnet && porDui.id !== porCarnet.id) {
+      // Dos jugadores distintos: no hay a cuál actualizar, así que no se deja guardar.
+      conflicto = `El DUI es de ${nombreCompleto(porDui)} y el carnet es de ${nombreCompleto(porCarnet)}. Son jugadores distintos: revisa los números.`;
+    } else if (porDui || porCarnet) {
+      const p = porDui || porCarnet;
+      if (editando) conflicto = `Ese ${porDui ? 'DUI' : 'carnet'} ya pertenece a ${nombreCompleto(p)}. No se puede repetir.`;
+      else existente = p;
+    }
+
+    if (conflicto) {
+      aviso.className = 'repetido error';
+      aviso.replaceChildren(
+        el('div', { class: 'repetido-icono', 'aria-hidden': 'true', text: '!' }),
+        el('div', { class: 'repetido-texto' }, el('strong', { text: 'No se puede repetir' }), el('p', { text: conflicto })),
+      );
+    } else if (existente) {
+      const p = existente;
+      const docs = [p.dui ? 'DUI' : '', p.carnet ? 'carnet' : ''].filter(Boolean).join(' y ');
+      aviso.className = 'repetido';
+      aviso.replaceChildren(
+        avatar(p, 'fila-foto'),
+        el(
+          'div',
+          { class: 'repetido-texto' },
+          el('strong', { text: 'Este jugador ya está registrado' }),
+          el('p', { class: 'repetido-quien', text: `${nombreCompleto(p)}${p.equipo ? ` · ${p.equipo}` : ''}` }),
+          el('p', { text: `Documentos guardados: ${docs || 'ninguno'}.` }),
+          el('p', { text: 'Si guardas, se actualiza su ficha con lo que escribiste o leíste. Lo que dejes en blanco se conserva. No se crea otro jugador.' }),
+        ),
+      );
+    }
+    aviso.hidden = !conflicto && !existente;
+    aplicarTextosForm();
+
+    // Si el aviso aparece o cambia, se lleva a la vista (el formulario puede estar desplazado hacia abajo).
+    const marca = conflicto || existente?.id || '';
+    if (marca && marca !== avisoVisto) aviso.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    avisoVisto = marca;
+  }
 
   /* --- Fotos de documentos --- */
 
@@ -572,12 +645,15 @@ async function iniciar() {
       }
     }
     estadoOcr(false);
-    if (!fotosDoc[clave]) return;
+    // Quitaron la foto o ya cerraron el formulario (p. ej. guardaron antes de que terminara la lectura): no se avisa nada.
+    if (!fotosDoc[clave] || !dlgForm.open) return;
 
     const partes = [leyoDatos ? 'datos' : '', leyoRostro ? 'foto del jugador' : ''].filter(Boolean);
     let msg = partes.length ? `Leído: ${partes.join(' y ')}. Revísalo antes de guardar.` : 'No se pudo leer nada claro; escribe los datos a mano.';
     if (ocrOk && !campos[doc].value.trim()) msg += ` Falta el número de ${DOCS[doc]}: escríbelo a mano.`;
-    toast(msg, !partes.length);
+    if (conflicto) msg = conflicto;
+    else if (existente) msg = `Este jugador ya está registrado (${nombreCompleto(existente)}). Si guardas, se actualiza su ficha; no se crea otro.`;
+    toast(msg, Boolean(conflicto) || (!partes.length && !existente));
   }
 
   /** Rellena el formulario con lo leído. Devuelve true si cambió algo. */
@@ -604,6 +680,7 @@ async function iniciar() {
     poner('equipo', r.equipo, true);
     validarDuiUI();
     actualizarMarcas();
+    evaluarRepetido(); // ¿ya existe un jugador con el DUI o carnet que se acaba de leer?
     return cambio;
   }
 
@@ -674,6 +751,9 @@ async function iniciar() {
 
   async function abrirFormulario(registro = null) {
     editando = registro;
+    existente = null;
+    conflicto = '';
+    avisoVisto = '';
     fotosDoc = {};
     textos = {};
     retrato = null;
@@ -698,6 +778,7 @@ async function iniciar() {
     pintarRetrato();
     validarDuiUI();
     actualizarMarcas();
+    evaluarRepetido();
     dlgForm.showModal();
 
     if (registro) {
@@ -742,17 +823,17 @@ async function iniciar() {
       foto: retrato ? retrato.dataUrl : '',
     };
 
+    // Nunca se crea un jugador repetido: si el DUI o carnet ya existe, se actualiza esa ficha.
+    evaluarRepetido();
+    if (conflicto) return errorForm(conflicto);
+    if (existente) {
+      // Lo nuevo reemplaza a lo anterior (por si estaba mal); lo que se deja en blanco se conserva.
+      for (const k of Object.keys(datos)) if (datos[k] === '') datos[k] = existente[k] ?? '';
+    }
+
     if (!datos.nombres) return errorForm('Escribe los nombres del jugador.');
     if (!datos.dui && !datos.carnet) return errorForm('Escribe el número del DUI o del carnet.');
-    if (!Object.keys(fotosDoc).length) return errorForm('Agrega al menos una foto del DUI o del carnet.');
-
-    const repetido = players.find(
-      (p) =>
-        p.id !== editando?.id &&
-        ((datos.dui && p.dui && normalizar(p.dui) === normalizar(datos.dui)) ||
-          (datos.carnet && p.carnet && normalizar(p.carnet) === normalizar(datos.carnet))),
-    );
-    if (repetido && !confirm(`Ya existe un jugador con ese número (${nombreCompleto(repetido)}). ¿Guardar de todas formas?`)) return;
+    if (!existente && !Object.keys(fotosDoc).length) return errorForm('Agrega al menos una foto del DUI o del carnet.');
 
     const fotos = {};
     for (const clave of CLAVES) {
@@ -766,20 +847,32 @@ async function iniciar() {
     btn.disabled = true;
     btn.textContent = 'Guardando…';
     try {
-      await api.guardar({ id: editando?.id, datos, fotos, usuario: usuario.email, borrarAntiguas: !!editando?.tipo });
+      const actualizando = !!existente;
+      const resultado = await api.guardar({ id: editando?.id ?? existente?.id, datos, fotos, usuario: usuario.email, borrarAntiguas: !!editando?.tipo });
       dlgForm.close();
-      toast(editando ? 'Cambios guardados.' : 'Jugador guardado.');
+      toast(actualizando ? 'Ficha actualizada. No se creó otro jugador.' : editando ? 'Cambios guardados.' : 'Jugador guardado.');
+      if (resultado?.sinLlaves && usuario.admin) {
+        // Solo a los administradores: son quienes pueden publicar las reglas en Firebase.
+        toast('Guardado. Falta publicar las reglas nuevas de Firebase (firestore.rules) para que no se repitan DUI o carnets entre teléfonos.', true);
+      }
     } catch (e) {
       console.error(e);
-      errorForm(
-        e.code === 'permission-denied'
-          ? 'No tienes permiso para guardar. Vuelve a iniciar sesión.'
-          : 'No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.',
-      );
+      if (e.code === 'repetido') {
+        // Otra persona acaba de registrar ese DUI o carnet y esta pantalla todavía no lo sabía.
+        const otro = players.find((p) => p.id === e.jugadorId);
+        errorForm(`Ese ${e.tipo === 'dui' ? 'DUI' : 'carnet'} ya está registrado${otro ? ` (${nombreCompleto(otro)})` : ''}. Revisa el aviso de arriba y vuelve a intentar.`);
+        evaluarRepetido();
+      } else {
+        errorForm(
+          e.code === 'permission-denied'
+            ? 'No tienes permiso para guardar. Vuelve a iniciar sesión.'
+            : 'No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.',
+        );
+      }
     } finally {
       guardando = false;
       btn.disabled = false;
-      btn.textContent = editando ? 'Guardar cambios' : 'Guardar';
+      aplicarTextosForm();
     }
   });
 

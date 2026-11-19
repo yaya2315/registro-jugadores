@@ -24,6 +24,22 @@ export function validarDUI(valor) {
   return verificador === Number(d[8]);
 }
 
+/**
+ * Clave normalizada de un documento, para saber si dos registros son la misma persona.
+ *   DUI    -> sus 9 dígitos ("05482135-1", "0548 2135 1" -> "054821351"); si no hay 9, no se compara.
+ *   carnet -> letras y números en mayúsculas ("fb-00123 " -> "FB00123"); mínimo 3 caracteres.
+ * Devuelve '' si el número está vacío o incompleto.
+ */
+export function claveDocumento(tipo, numero) {
+  const s = String(numero || '');
+  if (tipo === 'dui') {
+    const d = s.replace(/\D/g, '');
+    return d.length === 9 ? d : '';
+  }
+  const c = normalizar(s).replace(/[^A-Z0-9]/g, '');
+  return c.length >= 3 ? c : '';
+}
+
 /** "012345678" -> "01234567-8" */
 export function formatearDUI(valor) {
   const d = String(valor || '').replace(/\D/g, '');
