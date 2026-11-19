@@ -244,6 +244,13 @@ code { background: var(--verde-claro); padding: 1px 6px; border-radius: 6px; fon
 
 .aviso { margin: 0; padding: 10px 14px; border-radius: 10px; font-size: .92rem; }
 .aviso.error { background: var(--error-fondo); color: var(--error) !important; }
+.aviso.info { background: var(--verde-claro); color: var(--texto) !important; text-align: left; }
+
+.instalar {
+  width: 100%; display: grid; gap: 12px; margin-top: 6px; padding-top: 18px;
+  border-top: 1px solid var(--borde);
+}
+.instalar p:first-child { font-size: .92rem; }
 
 /* Detalle */
 .fotos-detalle { display: grid; gap: 12px; }

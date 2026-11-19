@@ -1,3 +1,4 @@
+import './instalar.js';
 import { firebaseConfig, CONFIGURADO } from './firebase-config.js';
 import { procesarFoto, miniaturaDesde } from './images.js';
 import { reconocerTexto } from './ocr.js';

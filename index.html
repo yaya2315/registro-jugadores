@@ -7,6 +7,12 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Registro de jugadores</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Jugadores">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -35,6 +41,15 @@
         Ingresar con Google
       </button>
       <p id="login-msg" class="aviso error" role="alert" hidden></p>
+
+      <div id="instalar" class="instalar" hidden>
+        <p>¿Usas el celular? Instala la app para abrirla con un toque, sin buscar el enlace.</p>
+        <button id="btn-instalar" type="button" class="btn secundario grande">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0-4.5-4.500M12 15l4.500-4.500M5 20h14"/></svg>
+          Instalar app
+        </button>
+        <p id="instalar-ayuda" class="aviso info" hidden></p>
+      </div>
     </div>
   </section>
 
@@ -47,6 +62,7 @@
       </div>
       <div class="barra-usuario">
         <span id="usuario-email" class="email"></span>
+        <button id="btn-instalar-barra" class="btn texto" type="button" hidden>Instalar</button>
         <button id="btn-salir" class="btn texto" title="Cerrar sesión">Salir</button>
       </div>
     </header>
