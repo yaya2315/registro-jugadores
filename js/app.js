@@ -180,7 +180,18 @@ async function iniciar() {
     $('#lista-equipos').replaceChildren(...equipos.map(([, nombre]) => el('option', { value: nombre })));
   }
 
+  /** Cuántos filtros distintos del valor por defecto hay puestos (se ve en el botón aunque el panel esté plegado). */
+  function actualizarContadorFiltros() {
+    const activos = (filtro.doc !== 'todos') + Boolean(filtro.equipo) + (filtro.orden !== 'recientes');
+    const marca = $('#filtros-activos');
+    marca.textContent = activos;
+    marca.hidden = activos === 0;
+    $('#btn-filtros').classList.toggle('con-filtros', activos > 0);
+    $('#btn-filtros').setAttribute('aria-label', activos ? `Filtros, ${activos} activo${activos === 1 ? '' : 's'}` : 'Filtros');
+  }
+
   function pintarLista() {
+    actualizarContadorFiltros();
     const equipos = equiposActuales();
     pintarStats(equipos);
     pintarEquipos(equipos);
@@ -233,6 +244,12 @@ async function iniciar() {
       ),
     );
   }
+
+  $('#btn-filtros').addEventListener('click', () => {
+    const panel = $('#panel-filtros');
+    panel.hidden = !panel.hidden;
+    $('#btn-filtros').setAttribute('aria-expanded', String(!panel.hidden));
+  });
 
   $('#buscar').addEventListener('input', pintarLista);
   $('#sel-equipo').addEventListener('change', (ev) => { filtro.equipo = ev.target.value; pintarLista(); });

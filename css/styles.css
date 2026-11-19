@@ -493,3 +493,18 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 
 /* Texto de ejemplo en los campos: el gris por defecto del navegador no llega a 4.5:1 de contraste */
 ::placeholder { color: var(--suave); opacity: 1; }
+
+/* ---------- Cuadro de búsqueda plegable ----------
+   Plegado solo se ve el buscador y el botón "Filtros"; al pulsarlo se despliega el resto. */
+.barra-busqueda { display: flex; gap: 8px; }
+.barra-busqueda .busqueda { flex: 1; min-width: 0; }
+.btn-filtros { flex: none; min-height: 48px; padding: 0 14px; border-radius: 12px; }
+.btn-filtros[aria-expanded="true"] { background: var(--verde-claro); border-color: var(--verde); }
+.btn-filtros.con-filtros { border-color: var(--verde); }
+.contador {
+  display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 99px; background: var(--verde); color: #fff; font-size: .78rem; font-weight: 800;
+}
+@media (prefers-color-scheme: dark) { .contador { color: #06170f; } }
+.panel-filtros { display: grid; gap: 12px; }
+.herramientas { grid-template-columns: minmax(0, 1fr); }

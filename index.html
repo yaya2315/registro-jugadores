@@ -83,10 +83,20 @@
 
     <main class="contenedor">
       <div class="herramientas">
+        <div class="barra-busqueda">
         <label class="busqueda">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
-          <input id="buscar" type="search" placeholder="Buscar jugador, DUI o equipo" autocomplete="off">
+          <input id="buscar" type="search" placeholder="Buscar" autocomplete="off" aria-label="Buscar por nombre, DUI, carnet o equipo">
         </label>
+        <button id="btn-filtros" type="button" class="btn secundario btn-filtros" aria-expanded="false" aria-controls="panel-filtros">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span>Filtros</span>
+          <span id="filtros-activos" class="contador" hidden>0</span>
+        </button>
+        </div>
+
+        <!-- Todo lo demás queda plegado hasta que se pulsa "Filtros" -->
+        <div id="panel-filtros" class="panel-filtros" hidden>
         <div class="filtros" role="group" aria-label="Filtrar jugadores">
           <button type="button" class="chip activo" data-filtro="todos">Todos</button>
           <button type="button" class="chip" data-filtro="dui">Con DUI</button>
@@ -111,6 +121,7 @@
         <div class="fila-botones">
           <button id="btn-csv" type="button" class="btn secundario">Exportar a Excel</button>
           <button id="btn-planilla" type="button" class="btn secundario">Imprimir planilla</button>
+        </div>
         </div>
       </div>
 
