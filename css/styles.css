@@ -145,10 +145,10 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 .stats { margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .stats > div {
   display: flex; flex-direction: column-reverse; justify-content: flex-end; align-items: center; gap: 4px;
-  background: rgba(0, 0, 0, .22); border-radius: 14px; padding: 9px 8px;
+  background: rgba(0, 0, 0, .22); border-radius: 14px; padding: 12px 8px;
   text-align: center;
 }
-.stats dd { margin: 0; font-size: 1.4rem; font-weight: 800; line-height: 1; color: var(--lima); font-variant-numeric: tabular-nums; }
+.stats dd { margin: 0; font-size: 1.4rem; font-weight: 800; line-height: 1.15; color: var(--lima); font-variant-numeric: tabular-nums; }
 .stats dt { font-size: .78rem; font-weight: 650; letter-spacing: .01em; }
 
 /* ---------- Lista ---------- */
@@ -232,7 +232,7 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 .fila-docs { display: grid; gap: 6px; justify-items: end; }
 .doc-chip {
   font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
-  padding: 6px 10px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
+  padding: 8px 10px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
 }
 .doc-chip.ok { background: var(--verde-claro); color: var(--verde); }
 .doc-chip.falta { border: 1px dashed var(--borde); color: var(--suave); }
@@ -352,7 +352,7 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 .ficha-apellidos { font-size: 1.55rem; font-weight: 800; text-transform: uppercase; line-height: 1.1; overflow-wrap: anywhere; }
 .ficha-nombres { font-size: 1.1rem; }
 .etiquetas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.etiqueta { background: var(--verde-claro); color: var(--verde); padding: 6px 12px; border-radius: 99px; font-size: .82rem; font-weight: 700; }
+.etiqueta { background: var(--verde-claro); color: var(--verde); padding: 8px 12px; border-radius: 99px; font-size: .82rem; font-weight: 700; }
 
 .doc-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .doc-card {
@@ -362,7 +362,7 @@ code { background: var(--verde-claro); padding: 3px 8px; border-radius: 6px; fon
 .doc-card.falta { border-style: dashed; color: var(--suave); background: transparent; }
 .doc-card-t { font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); }
 .doc-card-n { font-size: 1.08rem; overflow-wrap: anywhere; }
-.sello { justify-self: start; font-size: .72rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; }
+.sello { justify-self: start; font-size: .75rem; font-weight: 700; padding: 8px 12px; border-radius: 99px; }
 .sello.ok { background: var(--verde-claro); color: var(--ok); }
 .sello.warn { background: color-mix(in srgb, var(--aviso) 18%, transparent); color: var(--aviso); }
 
