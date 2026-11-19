@@ -62,6 +62,7 @@
       </div>
       <div class="barra-usuario">
         <span id="usuario-email" class="email"></span>
+        <button id="btn-admin" class="btn texto" type="button" hidden>Administrar</button>
         <button id="btn-instalar-barra" class="btn texto" type="button" hidden>Instalar</button>
         <button id="btn-salir" class="btn texto" type="button">Salir</button>
       </div>
@@ -106,7 +107,10 @@
               <option value="edad">Edad (menor a mayor)</option>
             </select>
           </label>
-          <button id="btn-csv" type="button" class="btn secundario peq">Exportar</button>
+        </div>
+        <div class="fila-botones">
+          <button id="btn-csv" type="button" class="btn secundario">Exportar a Excel</button>
+          <button id="btn-planilla" type="button" class="btn secundario">Imprimir planilla</button>
         </div>
       </div>
 
@@ -247,6 +251,7 @@
     <div id="det-contenido" class="hoja-cuerpo"></div>
     <footer class="hoja-pie">
       <button id="det-eliminar" type="button" class="btn secundario peligro">Eliminar</button>
+      <button id="det-imprimir" type="button" class="btn secundario">Imprimir</button>
       <button id="det-editar" type="button" class="btn primario">Editar</button>
     </footer>
   </dialog>
@@ -255,6 +260,71 @@
   <dialog id="dlg-img" class="visor">
     <button type="button" class="btn secundario" data-cerrar>Cerrar</button>
   </dialog>
+
+  <!-- Imprimir planilla -->
+  <dialog id="dlg-planilla" class="cuadro">
+    <form id="form-planilla" method="dialog">
+      <h2>Imprimir planilla</h2>
+      <p class="ayuda">Una hoja con los jugadores del equipo, lista para imprimir o guardar como PDF.</p>
+      <label class="campo">
+        <span>Equipo</span>
+        <select id="pl-equipo"></select>
+      </label>
+      <label class="check"><input id="pl-fotos" type="checkbox" checked><span>Incluir fotos</span></label>
+      <label class="check"><input id="pl-firma" type="checkbox" checked><span>Columna para firma</span></label>
+      <label class="check"><input id="pl-telefono" type="checkbox"><span>Incluir teléfono</span></label>
+      <p id="pl-resumen" class="ayuda"></p>
+      <div class="cuadro-pie">
+        <button type="button" class="btn secundario" data-cerrar>Cancelar</button>
+        <button type="submit" id="pl-imprimir" class="btn primario">Imprimir o guardar PDF</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Administrar (solo administradores) -->
+  <dialog id="dlg-admin" class="hoja">
+    <header class="hoja-cab">
+      <h2>Administrar</h2>
+      <button type="button" class="btn texto" data-cerrar>Cerrar</button>
+    </header>
+    <div class="hoja-cuerpo">
+      <section class="bloque" aria-label="Usuarios autorizados">
+        <h3>Usuarios autorizados</h3>
+        <p class="ayuda">Quien esté en esta lista puede entrar con su cuenta de Google. Los <strong>administradores</strong> además pueden agregar y quitar usuarios y descargar respaldos.</p>
+        <p id="usuarios-resumen" class="resumen-usuarios"></p>
+        <ul id="lista-usuarios" class="usuarios"></ul>
+
+        <form id="form-usuario" class="agregar-usuario" novalidate>
+          <h4 class="sub-titulo">Agregar a alguien</h4>
+          <label class="campo">
+            <span>Correo de Google *</span>
+            <input id="u-correo" type="email" inputmode="email" autocomplete="off" placeholder="nombre@gmail.com" required>
+          </label>
+          <label class="campo">
+            <span>Nombre (opcional)</span>
+            <input id="u-nombre" autocomplete="off" maxlength="80">
+          </label>
+          <label class="check"><input id="u-admin" type="checkbox"><span>Es administrador</span></label>
+          <p class="ayuda">La persona entra con «Ingresar con Google» usando exactamente ese correo.</p>
+          <p id="usuario-error" class="aviso error" role="alert" hidden></p>
+          <button type="submit" class="btn primario">Agregar</button>
+        </form>
+      </section>
+
+      <section class="bloque" aria-label="Respaldo">
+        <h3>Respaldo</h3>
+        <p class="ayuda">Descarga un archivo ZIP con todos los jugadores: una carpeta por jugador con sus fotos, una tabla para Excel y todos los datos. Guárdalo en un lugar seguro: contiene DUI y fotos.</p>
+        <button id="btn-respaldo" type="button" class="btn secundario">Descargar respaldo completo</button>
+        <p id="respaldo-estado" class="aviso info" role="status" hidden></p>
+      </section>
+    </div>
+    <footer class="hoja-pie">
+      <button type="button" class="btn secundario" data-cerrar>Cerrar</button>
+    </footer>
+  </dialog>
+
+  <!-- Hoja que se arma al imprimir (invisible en pantalla) -->
+  <div id="hoja-impresion" aria-hidden="true"></div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 

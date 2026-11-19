@@ -1,8 +1,14 @@
 rules_version = '2';
 
-// Solo pueden leer/escribir las cuentas de Google cuyo correo (verificado)
-// exista como documento en la colección "allowed". Esa colección solo se
-// edita desde la consola de Firebase: ninguna cuenta puede modificarla desde la app.
+// Dos niveles de acceso:
+//   - Usuario: su correo (de Google, verificado) existe como documento en "allowed".
+//              Puede ver, crear, editar y borrar jugadores.
+//   - Administrador: además tiene el campo  admin = true  en su documento de "allowed".
+//              Puede agregar y quitar usuarios y hacer o quitar administradores.
+//
+// Un administrador no puede quitarse a sí mismo el acceso ni el rol, así que siempre queda
+// al menos uno. El primer administrador se crea desde la consola de Firebase
+// (se agrega el campo admin = true a un documento de "allowed").
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -11,22 +17,46 @@ service cloud.firestore {
         && request.auth.token.email_verified == true;
     }
 
-    function esAutorizado() {
-      return sesionValida()
-        && exists(/databases/$(database)/documents/allowed/$(request.auth.token.email.lower()));
+    function correoActual() {
+      return request.auth.token.email.lower();
     }
 
-    // Cada persona solo puede consultar su propio documento (para saber si tiene acceso).
-    match /allowed/{email} {
-      allow get: if sesionValida() && request.auth.token.email.lower() == email;
-      allow list, create, update, delete: if false;
+    function esAutorizado() {
+      return sesionValida()
+        && exists(/databases/$(database)/documents/allowed/$(correoActual()));
+    }
+
+    function esAdmin() {
+      return esAutorizado()
+        && get(/databases/$(database)/documents/allowed/$(correoActual())).data.get('admin', false) == true;
+    }
+
+    // Datos de un usuario autorizado: el ID del documento es su correo, en minúsculas.
+    function usuarioValido(correo) {
+      return correo == correo.lower()
+        && correo.matches('^[^@ ]+@[^@ ]+[.][^@ ]+$')
+        && request.resource.data.get('admin', false) is bool
+        && request.resource.data.get('nombre', '') is string
+        && request.resource.data.get('nombre', '').size() <= 80;
+    }
+
+    match /allowed/{correo} {
+      // Cada persona puede consultar su propio documento (para saber si tiene acceso y si es administrador).
+      allow get: if sesionValida() && (correoActual() == correo || esAdmin());
+      allow list: if esAdmin();
+      allow create: if esAdmin() && usuarioValido(correo);
+      // Un administrador no puede quitarse a sí mismo el rol de administrador.
+      allow update: if esAdmin() && usuarioValido(correo)
+        && !(correoActual() == correo && request.resource.data.get('admin', false) != true);
+      // Ni quitarse el acceso a sí mismo.
+      allow delete: if esAdmin() && correoActual() != correo;
     }
 
     match /players/{playerId} {
       allow read, write: if esAutorizado();
 
-      // Fotos comprimidas (frente / reverso)
-      match /fotos/{lado} {
+      // Fotos comprimidas (documentos)
+      match /fotos/{clave} {
         allow read, write: if esAutorizado();
       }
     }

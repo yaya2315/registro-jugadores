@@ -13,7 +13,9 @@ Aplicación web (instalable en el celular) para registrar jugadores tomando foto
 2. Pulsa **Nuevo jugador** y toma foto del frente y reverso del **DUI** y/o del **carnet** (o las sube de la galería). Un mismo jugador puede tener los dos documentos.
 3. La app rellena número de documento, nombres, apellidos y fecha de nacimiento, y **recorta la cara del jugador** de la foto del documento: solo la cabeza, sin fondo y con un retoque mínimo, que se ve sobre un degradado verde en el plantel. Si ya hay fotos de documento en el formulario, el botón «Sacar del documento» repite el recorte. **Siempre hay que revisar los datos**: el OCR puede equivocarse. En el DUI se valida además el dígito verificador. Si la foto del rostro no sale bien, se puede tomar o subir otra.
 4. Al guardar, el jugador aparece en el **Plantel**: una fila por jugador con su foto a la izquierda y su nombre, equipo, edad y posición a la derecha, más marcas de qué documentos ya tiene registrados.
-5. Desde el plantel: búsqueda (sin importar tildes), filtros (con DUI, con carnet, falta documento, por equipo), orden, ficha completa con fotos ampliables, edición, borrado y exportación a CSV (Excel).
+5. Desde el plantel: búsqueda (sin importar tildes), filtros (con DUI, con carnet, falta documento, por equipo), orden, ficha completa con fotos ampliables, edición, borrado y exportación a Excel.
+6. **Imprimir planilla:** una hoja horizontal por equipo (o de todos) con foto, nombre, DUI, carnet, nacimiento, posición, camiseta y columna de firma. En el diálogo de impresión se elige «Guardar como PDF». La **ficha** de cada jugador también se imprime, con las fotos de sus documentos.
+7. **Administrar** (solo administradores): agregar o quitar usuarios, hacer a otros administradores y descargar el **respaldo completo**: un ZIP con una carpeta por jugador (su cara y las fotos de sus documentos como archivos), una tabla para Excel (`jugadores.csv`) y todos los datos (`respaldo.json`). Contiene DUI y fotos: hay que guardarlo con cuidado. Por ahora la app no tiene botón para restaurarlo.
 
 Las fotos de los documentos se reducen y comprimen (JPEG) y se guardan en Firestore, así no hace falta Firebase Storage (que exige plan de pago).
 
@@ -33,14 +35,20 @@ Abre `js/firebase-config.js`, reemplaza los `PEGAR_AQUI` por tus valores y súbe
 En **Firestore Database > Reglas**, pega el contenido de `firestore.rules` y pulsa **Publicar**.
 (Con Firebase CLI: `firebase deploy --only firestore:rules`.)
 
-### 4. Autorizar a los usuarios
-En **Firestore Database > Datos**:
-1. **Iniciar colección** con ID `allowed`.
-2. Como **ID del documento**, escribe el correo de Gmail del cliente **en minúsculas** (ej. `cliente@gmail.com`). Agrega un campo cualquiera (ej. `nombre` = `Cliente`).
-3. Repite para cada persona que deba tener acceso.
+### 4. Crear el primer administrador
+Hay dos niveles de acceso: **usuario** (ve y edita jugadores) y **administrador** (además maneja usuarios y respaldos).
+Solo el primer administrador se crea desde la consola; después se manejan desde la app.
 
-Para quitar el acceso a alguien, borra su documento de `allowed`.
-Quien no esté en esa lista no puede leer ni escribir nada, aunque entre con Google.
+En **Firestore Database > Datos**:
+1. Si no existe, **Iniciar colección** con ID `allowed`.
+2. Abre (o crea) el documento cuyo **ID es tu correo de Gmail en minúsculas** (ej. `cliente@gmail.com`).
+3. **Agregar campo**: nombre `admin`, tipo **boolean**, valor **true**.
+
+Desde ese momento, al entrar a la app aparece el botón **Administrar** (arriba), donde se agregan o quitan usuarios, se hacen otros administradores y se descarga el respaldo.
+Un administrador no puede quitarse a sí mismo el acceso ni el rol, así que siempre queda al menos uno.
+Quien no esté en la lista no puede leer ni escribir nada, aunque entre con Google.
+
+> Si ya habías publicado las reglas anteriores, vuelve a pegar `firestore.rules` y publícalas: las reglas nuevas son las que validan los roles.
 
 ### 5. Publicar en GitHub Pages
 En el repositorio: **Settings > Pages > Build and deployment > Source: Deploy from a branch > Branch: `main` / `/ (root)` > Save**.
@@ -60,7 +68,8 @@ node test/parser.test.mjs
 ## Estructura de datos
 
 ```
-allowed/{correo}                 -> lista de correos autorizados (solo desde la consola)
+allowed/{correo}                 -> usuarios autorizados: nombre, admin (true/false), agregadoPor, agregadoEn
+                                    (solo los administradores pueden cambiarla)
 players/{id}                     -> nombres, apellidos, fechaNacimiento, equipo, posicion, camiseta,
                                     telefono, notas, dui, carnet, foto (retrato 3:4),
                                     creadoEn, creadoPor

@@ -24,10 +24,37 @@ export async function crear() {
   const oyentes = new Set();
   const emitir = () => oyentes.forEach((cb) => cb(jugadores.map((p) => ({ ...p }))));
 
+  let usuarios = [
+    { email: 'demo@local', nombre: 'Tú (demostración)', admin: true, agregadoPor: '', agregadoEn: new Date() },
+    { email: 'entrenador@gmail.com', nombre: 'Carlos Entrenador', admin: false, agregadoPor: 'demo@local', agregadoEn: new Date() },
+  ];
+  const oyentesUsuarios = new Set();
+  const emitirUsuarios = () => oyentesUsuarios.forEach((cb) => cb(usuarios.map((u) => ({ ...u }))));
+
   return {
     alCambiarSesion(cb) {
-      setTimeout(() => cb({ email: 'demo@local' }, ''), 50);
+      // ?demo&rol=normal entra como usuario sin permisos de administrador
+      const admin = new URLSearchParams(location.search).get('rol') !== 'normal';
+      setTimeout(() => cb({ email: 'demo@local', admin }, ''), 50);
       return () => {};
+    },
+
+    escucharUsuarios(cb) {
+      oyentesUsuarios.add(cb);
+      setTimeout(emitirUsuarios, 30);
+      return () => oyentesUsuarios.delete(cb);
+    },
+    async crearUsuario({ email, nombre, admin, por }) {
+      usuarios = [...usuarios, { email, nombre, admin: !!admin, agregadoPor: por, agregadoEn: new Date() }];
+      emitirUsuarios();
+    },
+    async actualizarUsuario(email, cambios) {
+      usuarios = usuarios.map((u) => (u.email === email ? { ...u, ...cambios } : u));
+      emitirUsuarios();
+    },
+    async quitarUsuario(email) {
+      usuarios = usuarios.filter((u) => u.email !== email);
+      emitirUsuarios();
     },
     async iniciarSesion() {},
     async cerrarSesion() { location.reload(); },

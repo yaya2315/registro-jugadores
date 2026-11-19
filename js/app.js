@@ -4,27 +4,14 @@ import { procesarFoto, cargarCanvas, recorteCentrado } from './images.js';
 import { reconocerDocumento } from './ocr.js';
 import { extraerRostro } from './rostro.js';
 import { parsearDocumento, validarDUI, formatearDUI, normalizar } from './parser.js';
+import { $, $$, el, DOCS, LADOS, CLAVES, fechaLegible, edad, nombreCompleto, claveEquipo, fechaHora, leerFotosDe } from './util.js';
+import { construirCsv, descargar } from './respaldo.js';
+import { construirPlanilla, construirFicha, imprimir } from './impresion.js';
+import { iniciarAdmin } from './admin.js';
 
 /* ------------------------------------------------------------------ */
 /* Utilidades                                                          */
 /* ------------------------------------------------------------------ */
-
-const $ = (sel, raiz = document) => raiz.querySelector(sel);
-const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
-
-/** Crea un elemento: el('div', {class: 'x', text: 'hola', onclick: fn}, hijo1, hijo2). */
-function el(tag, props = {}, ...hijos) {
-  const n = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (v === false || v == null) continue;
-    if (k === 'class') n.className = v;
-    else if (k === 'text') n.textContent = v;
-    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
-    else n.setAttribute(k, v === true ? '' : v);
-  }
-  n.append(...hijos.flat().filter((h) => h != null && h !== false));
-  return n;
-}
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function icono(id) {
@@ -38,10 +25,6 @@ function icono(id) {
 }
 
 const DEMO = ['localhost', '127.0.0.1'].includes(location.hostname) && new URLSearchParams(location.search).has('demo');
-
-const DOCS = { dui: 'DUI', carnet: 'Carnet' };
-const LADOS = ['frente', 'reverso'];
-const CLAVES = Object.keys(DOCS).flatMap((d) => LADOS.map((l) => `${d}_${l}`));
 
 const vistas = {
   cargando: $('#vista-cargando'),
@@ -68,20 +51,6 @@ function mostrarLoginMsg(msg) {
   m.textContent = msg || '';
   m.hidden = !msg;
 }
-
-const fechaLegible = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
-
-function edad(iso) {
-  if (!iso) return null;
-  const [y, m, d] = iso.split('-').map(Number);
-  const hoy = new Date();
-  let e = hoy.getFullYear() - y;
-  if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) e--;
-  return e >= 0 && e < 110 ? e : null;
-}
-
-const nombreCompleto = (p) => [p.nombres, p.apellidos].filter(Boolean).join(' ');
-const claveEquipo = (e) => normalizar(String(e || '').trim());
 
 /** Registros guardados con el formato anterior (un documento por registro) se leen como ficha. */
 function adaptar(p) {
@@ -154,6 +123,7 @@ async function iniciar() {
       return;
     }
     $('#usuario-email').textContent = user.email;
+    $('#btn-admin').hidden = !user.admin; // solo los administradores ven "Administrar"
     mostrarVista('app');
     cancelarEscucha = api.escuchar(
       (lista) => {
@@ -275,52 +245,25 @@ async function iniciar() {
     }),
   );
 
-  /* ---------- Exportar CSV ---------- */
+  /* ---------- Exportar a Excel ---------- */
 
   $('#btn-csv').addEventListener('click', () => {
     if (!players.length) return toast('No hay jugadores para exportar.');
-    const celda = (v) => {
-      let s = String(v ?? '');
-      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; // evita inyección de fórmulas en Excel
-      return `"${s.replace(/"/g, '""')}"`;
-    };
-    const cab = ['Nombres', 'Apellidos', 'DUI', 'Carnet', 'Fecha de nacimiento', 'Edad', 'Equipo', 'Posición', 'Camiseta', 'Teléfono', 'Notas', 'Registrado'];
-    const filas = ordenar([...players]).map((p) => [
-      p.nombres, p.apellidos, p.dui, p.carnet, fechaLegible(p.fechaNacimiento), edad(p.fechaNacimiento) ?? '',
-      p.equipo, p.posicion, p.camiseta, p.telefono, p.notas, p.creadoEn ? p.creadoEn.toLocaleString('es-SV') : '',
-    ]);
-    const csv = '﻿' + [cab, ...filas].map((f) => f.map(celda).join(',')).join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    const a = el('a', { href: url, download: `jugadores-${new Date().toISOString().slice(0, 10)}.csv` });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const csv = construirCsv(ordenar([...players]));
+    descargar(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `jugadores-${new Date().toISOString().slice(0, 10)}.csv`);
   });
 
   /* ---------- Fotos de documentos (lectura) ---------- */
 
   /** @returns {Promise<{fotos: Record<string,string>, deAntiguas: Set<string>}>} */
   async function cargarFotosDe(p) {
-    const antiguo = !!p.tipo; // formato anterior: fotos "frente" / "reverso" de un solo documento
-    let crudo = {};
     try {
-      crudo = await api.cargarFotos(p.id, { incluirAntiguas: antiguo });
+      return await leerFotosDe(api, p);
     } catch (e) {
       console.error(e);
       toast('No se pudieron cargar las fotos.', true);
+      return { fotos: {}, deAntiguas: new Set() };
     }
-    const fotos = {};
-    const deAntiguas = new Set();
-    for (const c of CLAVES) if (crudo[c]) fotos[c] = crudo[c];
-    if (antiguo) {
-      const doc = p.tipo === 'DUI' ? 'dui' : 'carnet';
-      for (const l of LADOS) {
-        const clave = `${doc}_${l}`;
-        if (crudo[l] && !fotos[clave]) { fotos[clave] = crudo[l]; deAntiguas.add(clave); }
-      }
-    }
-    return { fotos, deAntiguas };
   }
 
   /* ---------- Ficha del jugador ---------- */
@@ -411,6 +354,13 @@ async function iniciar() {
     const { fotos } = await cargarFotosDe(p);
     if (detalleId === id) renderFicha(p, fotos);
   }
+
+  $('#det-imprimir').addEventListener('click', async () => {
+    const p = players.find((x) => x.id === detalleId);
+    if (!p) return;
+    const { fotos } = await cargarFotosDe(p);
+    await imprimir(construirFicha(p, fotos));
+  });
 
   $('#det-editar').addEventListener('click', async () => {
     const p = players.find((x) => x.id === detalleId);
@@ -815,6 +765,56 @@ async function iniciar() {
       btn.textContent = editando ? 'Guardar cambios' : 'Guardar';
     }
   });
+
+  /* ---------- Imprimir planilla ---------- */
+
+  const dlgPlanilla = $('#dlg-planilla');
+
+  function jugadoresDePlanilla() {
+    const clave = $('#pl-equipo').value;
+    return players.filter((p) => !clave || claveEquipo(p.equipo) === clave);
+  }
+
+  function resumenPlanilla() {
+    const n = jugadoresDePlanilla().length;
+    $('#pl-resumen').textContent = `${n} jugador${n === 1 ? '' : 'es'} en la planilla.`;
+    $('#pl-imprimir').disabled = n === 0;
+  }
+
+  $('#btn-planilla').addEventListener('click', () => {
+    if (!players.length) return toast('Todavía no hay jugadores para imprimir.');
+    const equipos = equiposActuales();
+    const sel = $('#pl-equipo');
+    sel.replaceChildren(
+      el('option', { value: '', text: 'Todos los equipos' }),
+      ...equipos.map(([k, nombre]) => el('option', { value: k, text: nombre })),
+    );
+    sel.value = filtro.equipo; // empieza con el equipo que se está viendo en la lista
+    resumenPlanilla();
+    dlgPlanilla.showModal();
+  });
+  $('#pl-equipo').addEventListener('change', resumenPlanilla);
+
+  $('#form-planilla').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const clave = $('#pl-equipo').value;
+    const opcion = $('#pl-equipo').selectedOptions[0];
+    const lista = jugadoresDePlanilla();
+    if (!lista.length) return;
+    dlgPlanilla.close();
+    await imprimir(
+      construirPlanilla(lista, {
+        equipo: clave ? opcion.text : '',
+        fotos: $('#pl-fotos').checked,
+        firma: $('#pl-firma').checked,
+        telefono: $('#pl-telefono').checked,
+      }),
+    );
+  });
+
+  /* ---------- Administrar (solo administradores) ---------- */
+
+  iniciarAdmin({ api, getUsuario: () => usuario, getJugadores: () => players, toast });
 
   /* ---------- Cerrar diálogos ---------- */
   $$('[data-cerrar]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));

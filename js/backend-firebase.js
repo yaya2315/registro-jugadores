@@ -34,21 +34,22 @@ export async function crear() {
     alCambiarSesion(cb) {
       return A.onAuthStateChanged(auth, async (user) => {
         if (!user) return cb(null, aviso);
-        let permitido = false;
+        let acceso = null;
         try {
           const email = (user.email || '').toLowerCase();
           if (user.emailVerified && email) {
-            permitido = (await F.getDoc(F.doc(db, 'allowed', email))).exists();
+            const snap = await F.getDoc(F.doc(db, 'allowed', email));
+            if (snap.exists()) acceso = snap.data();
           }
         } catch (e) {
           console.warn('Verificación de acceso:', e.code || e);
         }
-        if (!permitido) {
+        if (!acceso) {
           aviso = `La cuenta ${user.email} no tiene permiso para entrar. Pide que la autoricen.`;
           await A.signOut(auth); // dispara otra vez este evento con user = null
           return;
         }
-        cb({ email: user.email });
+        cb({ email: user.email, admin: acceso.admin === true });
       });
     },
 
@@ -98,6 +99,31 @@ export async function crear() {
       for (const c of [...CLAVES_FOTO, ...CLAVES_ANTIGUAS]) lote.delete(refFoto(id, c));
       lote.delete(F.doc(db, 'players', id));
       await lote.commit();
+    },
+
+    /* ---------- Usuarios autorizados (solo administradores; lo exigen las reglas) ---------- */
+
+    escucharUsuarios(cb, cbError) {
+      return F.onSnapshot(
+        F.collection(db, 'allowed'),
+        (snap) => cb(snap.docs.map((d) => {
+          const x = d.data();
+          return { email: d.id, nombre: x.nombre || '', admin: x.admin === true, agregadoPor: x.agregadoPor || '', agregadoEn: x.agregadoEn?.toDate?.() ?? null };
+        })),
+        cbError,
+      );
+    },
+
+    async crearUsuario({ email, nombre, admin, por }) {
+      await F.setDoc(F.doc(db, 'allowed', email), { nombre, admin: !!admin, agregadoPor: por, agregadoEn: F.serverTimestamp() });
+    },
+
+    async actualizarUsuario(email, cambios) {
+      await F.updateDoc(F.doc(db, 'allowed', email), cambios);
+    },
+
+    async quitarUsuario(email) {
+      await F.deleteDoc(F.doc(db, 'allowed', email));
     },
 
     /** @returns {Promise<Record<string,string>>} clave -> dataURL (solo las que existen) */
