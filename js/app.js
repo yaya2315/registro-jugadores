@@ -359,7 +359,7 @@ async function iniciar() {
       ['Nacimiento', fechaLegible(p.fechaNacimiento)],
       ['Teléfono', p.telefono ? el('a', { href: `tel:${p.telefono.replace(/[^\d+]/g, '')}`, text: p.telefono }) : ''],
       ['Notas', p.notas],
-      ['Registrado', [p.creadoPor, p.creadoEn ? p.creadoEn.toLocaleDateString('es-SV') : ''].filter(Boolean).join(' · ')],
+      ['Registrado', p.creadoEn ? p.creadoEn.toLocaleString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''],
     ].filter(([, v]) => v);
 
     let seccionFotos;
